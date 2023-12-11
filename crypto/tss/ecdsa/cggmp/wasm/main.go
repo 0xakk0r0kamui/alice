@@ -97,11 +97,13 @@ func loginfo(format string, args ...any) {
 
 func main() {
 	js.Global().Set("JSReceive", js.FuncOf(JSReceiveWrapper))
-	InitKeyGen("aaaaaaaaaaaaa")
+	js.Global().Set("JSKeyGen", js.FuncOf(JSKeyGen))
+
+	// InitKeyGen("aaaaaaaaaaaaa")
 	loginfo("DKG start")
 	// defer dkg1.Stop()
 	// defer dkg2.Stop()
-	KeyGen("okokokokook")
+	// KeyGen("okokokokook")
 	select {}
 }
 
@@ -196,6 +198,9 @@ func KeyGen(telegramID string) (*ecdsa.PublicKey, error) {
 	PKs["client3"] = *myPartialPublicKey3
 
 	loginfo("Keygen done, server pk %v, got %v cost %v", p.String(), crypto.PubkeyToAddress(*result1.PublicKey.ToPubKey()), time.Since(st))
+	js.Global().Call("getKeyGen", js.Global().Get("JSON").Call("stringify", js.ValueOf(map[string]interface{}{
+		"keygen": crypto.PubkeyToAddress(*result1.PublicKey.ToPubKey()).String(),
+	})))
 	return result1.PublicKey.ToPubKey(), nil
 }
 
@@ -295,14 +300,15 @@ func (l *listener) Done() <-chan error {
 //		return nil
 //	}
 func JSKeyGen(this js.Value, p []js.Value) interface{} {
-	teleID := p[0].String()
-	pk, err := KeyGen(teleID)
+	InitKeyGen("aaaaaaaaaaaaa")
+	// teleID := p[0].String()
+	_, err := KeyGen("okokokokook")
 	if err != nil {
 		// Handle error if needed
 		loginfo("Error in JSReceive:", err)
 	}
 
-	return crypto.PubkeyToAddress(*pk)
+	return nil
 }
 
 func JSReceiveWrapper(this js.Value, p []js.Value) interface{} {
