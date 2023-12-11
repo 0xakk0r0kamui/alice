@@ -16,6 +16,7 @@ package dkg
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/getamis/alice/crypto/commitment"
 	"github.com/getamis/alice/crypto/ecpointgrouplaw"
@@ -107,5 +108,6 @@ func (p *decommitHandler) HandleMessage(logger log.Logger, message types.Message
 }
 
 func (p *decommitHandler) Finalize(logger log.Logger) (types.Handler, error) {
+	fmt.Println(21)
 	return newVerifyHandler(p), nil
 }

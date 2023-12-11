@@ -15,6 +15,7 @@
 package newpeer
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -130,26 +131,28 @@ func (p *peerHandler) HandleMessage(logger log.Logger, message types.Message) er
 }
 
 func (p *peerHandler) Finalize(logger log.Logger) (types.Handler, error) {
+	fmt.Println(1)
 	i := 0
 	bks := make(birkhoffinterpolation.BkParameters, p.peerNum)
 	sgs := make([]*ecpointgrouplaw.ECPoint, p.peerNum)
+	fmt.Println(2)
 	for _, peer := range p.peers {
 		bks[i] = peer.peer.bk
 		sgs[i] = peer.peer.siG
 		i++
 	}
-
+	fmt.Println(3)
 	// The sum of siG must be equal to the given public key.
 	err := bks.ValidatePublicKey(sgs, p.threshold, p.pubkey)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(4)
 	selfBK, err := generateNewBK(logger, p.fieldOrder, bks, p.threshold, p.newPeerRank)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(5)
 	msg := &addshare.Message{
 		Type: addshare.Type_NewBk,
 		Id:   p.peerManager.SelfID(),
@@ -159,12 +162,14 @@ func (p *peerHandler) Finalize(logger log.Logger) (types.Handler, error) {
 			},
 		},
 	}
+	fmt.Println(6)
 	p.broadcast(msg)
 	return newResultHandler(p, selfBK, bks, sgs), nil
 }
 
 func (p *peerHandler) broadcast(msg proto.Message) {
 	for id := range p.peers {
+		fmt.Println(7)
 		p.peerManager.MustSend(id, msg)
 	}
 }

@@ -17,6 +17,7 @@ package dkg
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/commitment"
@@ -93,6 +94,7 @@ func (p *verifyHandler) HandleMessage(logger log.Logger, message types.Message) 
 
 func (p *verifyHandler) Finalize(logger log.Logger) (types.Handler, error) {
 	// Build the public key, the sum of uG
+	fmt.Println(31)
 	var err error
 	publicKey := p.u0g.Copy()
 	for _, peer := range p.peers {
@@ -102,12 +104,13 @@ func (p *verifyHandler) Finalize(logger log.Logger) (types.Handler, error) {
 			return nil, err
 		}
 	}
+	fmt.Println(32)
 	// The verification of ECDSA does not permit the public key is the identity element.
 	if publicKey.IsIdentity() {
 		return nil, ErrTrivialPublicKey
 	}
 	p.publicKey = publicKey
-
+	fmt.Println(33)
 	// Build the share, the sum of f^(n_j)(x_j)
 	poly := p.poly.Differentiate(p.bk.GetRank())
 	p.share = poly.Evaluate(p.bk.GetX())
@@ -116,7 +119,7 @@ func (p *verifyHandler) Finalize(logger log.Logger) (types.Handler, error) {
 		p.share = new(big.Int).Add(p.share, new(big.Int).SetBytes(v.Evaluation))
 	}
 	p.share = new(big.Int).Mod(p.share, p.fieldOrder)
-
+	fmt.Println(34)
 	// XOR all ridis
 	rid := bytes.Repeat([]byte{0}, LenRidi)
 	copy(rid, p.peerHandler.ridi)

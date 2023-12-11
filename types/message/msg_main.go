@@ -17,6 +17,7 @@ package message
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/getamis/alice/types"
@@ -41,9 +42,11 @@ type MsgMain struct {
 	lock        sync.RWMutex
 	handlerLock sync.RWMutex
 	cancel      context.CancelFunc
+	id          string
 }
 
 func NewMsgMain(id string, peerNum uint32, listener types.StateChangedListener, initHandler types.Handler, msgTypes ...types.MessageType) *MsgMain {
+	fmt.Printf("DEBUG Log %v\n", id)
 	return &MsgMain{
 		logger:         log.New("self", id),
 		peerNum:        peerNum,
@@ -51,6 +54,7 @@ func NewMsgMain(id string, peerNum uint32, listener types.StateChangedListener, 
 		state:          types.StateInit,
 		currentHandler: initHandler,
 		listener:       listener,
+		id:             id,
 	}
 }
 
@@ -62,6 +66,7 @@ func (t *MsgMain) Start() {
 		return
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	fmt.Println("AaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaA")
 	//nolint:errcheck
 	go t.messageLoop(ctx)
 	t.cancel = cancel
@@ -108,17 +113,22 @@ func (t *MsgMain) messageLoop(ctx context.Context) (err error) {
 		panicErr := recover()
 
 		if err == nil && panicErr == nil {
+			fmt.Printf("DEBUG Log3\n")
 			_ = t.setState(types.StateDone)
 		} else {
+			fmt.Printf("DEBUG Log4 %v %v\n", err, panicErr)
 			_ = t.setState(types.StateFailed)
 		}
+
 		t.Stop()
 	}()
-
+	fmt.Println("AaaaaaaaaaaaasdjkfsdjfnkaaaaaaaaaaaaaaaaaaaaaaaaaaaaaA")
 	handler := t.GetHandler()
 	msgType := handler.MessageType()
 	msgCount := uint32(0)
+	// t.logger.id("test")
 	for {
+		fmt.Printf(" %v still check wait for %v \n", t.id, msgType)
 		// 1. Pop messages
 		// 2. Check if the message is handled before
 		// 3. Handle the message
@@ -126,34 +136,41 @@ func (t *MsgMain) messageLoop(ctx context.Context) (err error) {
 		// 5. If yes, finalize the handler. Otherwise, wait for the next message
 		msg, err := t.msgChs.Pop(ctx, msgType)
 		if err != nil {
-			t.logger.Warn("Failed to pop message", "err", err)
+			t.logger.Warn(t.id, "Failed to pop message", "err", err)
+			fmt.Printf("DEBUG Log2\n")
 			return err
 		}
+		fmt.Printf("Pop %v\n", msg.GetId())
 		id := msg.GetId()
 		logger := t.logger.New("msgType", msgType, "fromId", id)
 		if handler.IsHandled(logger, id) {
-			logger.Warn("The message is handled before")
+			logger.Warn(t.id + "The message is handled before")
+			continue
 			return ErrDupMsg
 		}
 
 		err = handler.HandleMessage(logger, msg)
 		if err != nil {
-			logger.Warn("Failed to save message", "err", err)
+			logger.Warn(t.id+"Failed to save message", "err", err)
+			fmt.Printf("DEBUG Log1\n")
 			return err
 		}
 
 		msgCount++
+		fmt.Printf("lplplplplp %v %v %v\n", t.id, msgCount, handler.GetRequiredMessageCount())
 		if msgCount < handler.GetRequiredMessageCount() {
 			continue
 		}
-
+		fmt.Printf("%v %v %v\n", t.id, handler, err)
 		nextHandler, err := handler.Finalize(logger)
+		fmt.Printf("%v %v %v\n", t.id, nextHandler, err)
 		if err != nil {
-			logger.Warn("Failed to go to next handler", "err", err)
+			logger.Warn(t.id+" Failed to go to next handler", "err", err)
 			return err
 		}
 		// if nextHandler is nil, it means we got the final result
 		if nextHandler == nil {
+			fmt.Printf("DEBUG Log\n")
 			return nil
 		}
 		t.handlerLock.Lock()
@@ -161,7 +178,7 @@ func (t *MsgMain) messageLoop(ctx context.Context) (err error) {
 		handler = t.currentHandler
 		t.handlerLock.Unlock()
 		newType := handler.MessageType()
-		logger.Info("Change handler", "oldType", msgType, "newType", newType)
+		logger.Info(t.id, "Change handler", "oldType", msgType, "newType", newType)
 		msgType = newType
 		msgCount = uint32(0)
 	}

@@ -16,6 +16,7 @@ package dkg
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -151,6 +152,7 @@ func (p *peerHandler) IsHandled(logger log.Logger, id string) bool {
 }
 
 func (p *peerHandler) HandleMessage(logger log.Logger, message types.Message) error {
+	fmt.Printf("Handle msg %v\n", message)
 	msg := getMessage(message)
 	id := msg.GetId()
 	peer, ok := p.peers[id]
@@ -168,27 +170,40 @@ func (p *peerHandler) HandleMessage(logger log.Logger, message types.Message) er
 	peer.peer = &peerData{
 		bk: bk,
 	}
-	return peer.AddMessage(msg)
+	err = peer.AddMessage(msg)
+	fmt.Printf("Handle msg %v err %v\n", message, err)
+	return err
 }
 
 func (p *peerHandler) Finalize(logger log.Logger) (types.Handler, error) {
 	// Check if the bks are ok
+	fmt.Println(111)
+	fmt.Printf("%v\n", p)
+	fmt.Printf("pNum %v\n", p.peerNum)
+
 	bks := make(birkhoffinterpolation.BkParameters, p.peerNum+1)
+	fmt.Printf("pNum %v\n", p.bk)
+	fmt.Printf("pNum peers %v\n", p.peers)
 	bks[0] = p.bk
 	i := 1
-	for _, peer := range p.peers {
+	for id, peer := range p.peers {
+		fmt.Printf("pNum %v %v\n", peer.peer.bk, id)
 		bks[i] = peer.peer.bk
 		i++
 	}
+	fmt.Println(112)
 	err := bks.CheckValid(p.threshold, p.fieldOrder)
 	if err != nil {
 		logger.Warn("Failed to check bks", "err", err)
 		return nil, err
 	}
+	fmt.Println(113)
 
 	// Send out Feldman commit message and decommit message to all peers
 	msg := p.getDecommitMessage()
+	fmt.Println(114)
 	cggmp.Broadcast(p.peerManager, msg)
+	fmt.Println(115)
 	return newDecommitHandler(p), nil
 }
 

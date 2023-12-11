@@ -17,6 +17,7 @@ package message
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/getamis/alice/types"
 )
@@ -62,6 +63,9 @@ func (m *MsgChans) Push(msg types.Message) error {
 
 func (m *MsgChans) Pop(ctx context.Context, t types.MessageType) (types.Message, error) {
 	ch, ok := m.chs[t]
+	for k, v := range m.chs {
+		fmt.Printf("We have msg type %v-%v in channels\n", k, v)
+	}
 	if !ok {
 		return nil, ErrUndefinedMessage
 	}

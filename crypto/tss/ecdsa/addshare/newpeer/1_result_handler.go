@@ -15,6 +15,7 @@
 package newpeer
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -69,23 +70,27 @@ func (r *resultHandler) IsHandled(logger log.Logger, id string) bool {
 }
 
 func (r *resultHandler) HandleMessage(logger log.Logger, message types.Message) error {
+	fmt.Println(11)
 	msg := getMessage(message)
 	id := msg.GetId()
 	body := msg.GetResult()
+	fmt.Println(12)
 	peer, ok := r.peers[id]
 	if !ok {
 		logger.Warn("Peer not found")
 		return tss.ErrPeerNotFound
 	}
-
+	fmt.Println(13)
 	delta := new(big.Int).SetBytes(body.GetDelta())
 	if err := utils.InRange(delta, big.NewInt(0), r.fieldOrder); err != nil {
 		logger.Warn("Invalid delta value", "delta", delta.String(), "err", err)
 		return err
 	}
+	fmt.Println(14)
 	peer.result = &resultData{
 		delta: delta,
 	}
+	fmt.Println(15)
 	return peer.AddMessage(msg)
 }
 

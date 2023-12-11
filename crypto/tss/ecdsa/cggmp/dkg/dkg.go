@@ -15,6 +15,7 @@
 package dkg
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/getamis/alice/crypto/birkhoffinterpolation"
@@ -67,6 +68,7 @@ func newDKGWithHandler(peerManager types.PeerManager, threshold uint32, rank uin
 }
 
 func ensureRandAndThreshold(rank uint32, threshold uint32, peerNum uint32) error {
+	fmt.Println(rank, threshold, peerNum)
 	if err := utils.EnsureRank(rank, threshold); err != nil {
 		return err
 	}
@@ -105,7 +107,14 @@ func (d *DKG) GetResult() (*Result, error) {
 
 func (d *DKG) Start() {
 	d.MessageMain.Start()
-
 	// Send the first message to new peer
+
+	// cggmp.Broadcast(d.ph.peerManager, d.ph.getPeerMessage())
+}
+
+func (d *DKG) Start2() {
+	// d.MessageMain.Start()
+	// Send the first message to new peer
+
 	cggmp.Broadcast(d.ph.peerManager, d.ph.getPeerMessage())
 }
